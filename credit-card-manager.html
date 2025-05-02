@@ -273,7 +273,29 @@
     </table>
   </div>
 
-  <script>
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+  // ★ Firestoreを使うために追記 ★
+　import { getFirestore, collection, query, orderBy, onSnapshot, addDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyD...", // あなたの値に書き換える
+    authDomain: "creditc...", // あなたの値に書き換える
+    projectId: "creditc...", // あなたの値に書き換える
+    storageBucket: "creditc...", // あなたの値に書き換える
+    messagingSenderId: "21276...", // あなたの値に書き換える
+    appId: "1:2127..." // あなたの値に書き換える
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  // ★ Firestoreを初期化して、'db'変数で操作できるようにする ★
+  const db = getFirestore(app);
+    
     let expenses = [];
     let currentView = 'summary';
     let currentDetailPeriod = null; // {start, end, paymentDueDateDisplay}
@@ -326,16 +348,34 @@
 
 
     // --- データ永続化 ---
-    function loadData() {
-        const savedExpenses = localStorage.getItem('expenses');
-        if (savedExpenses) {
-            expenses = JSON.parse(savedExpenses);
-        }
-    }
+// Firestoreのコレクションを参照するオブジェクトを取得
+// "expenses" という名前のコレクションを使うことにします。なければ自動で作られます。
+import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; // 必要な関数をインポート
 
-    function saveData() {
-        localStorage.setItem('expenses', JSON.stringify(expenses));
-    }
+const expensesCol = collection(db, "expenses"); // 'db'は初期化時に作成したFirestoreインスタンス
+
+// データをリアルタイムで監視し、変更があればUIを更新する関数
+function subscribeToExpenses() {
+    console.log("Firestoreデータの監視を開始します...");
+    // 日付(date)の降順でデータを取得するクエリを作成 (任意)
+    const q = query(expensesCol, orderBy("date", "desc"));
+
+    onSnapshot(q, (querySnapshot) => {
+        console.log("データが更新されました！");
+        const updatedExpenses = [];
+        querySnapshot.forEach((doc) => {
+            // ドキュメントのデータとIDを取得して配列に追加
+            updatedExpenses.push({ id: doc.id, ...doc.data() });
+        });
+        expenses = updatedExpenses; // グローバル変数を更新
+        console.log("現在の支出データ:", expenses);
+        updateUI(); // UIを最新のデータで更新
+    }, (error) => {
+        // エラーハンドリング
+        console.error("データの監視中にエラーが発生しました: ", error);
+        alert("データの読み込みに失敗しました。");
+    });
+}
 
     // --- UI 更新関数 ---
 
@@ -460,9 +500,9 @@
               deleteButton.textContent = '削除';
               deleteButton.onclick = (event) => {
                   event.stopPropagation();
-                  if (confirm(`【確認】\n日付: ${exp.date}\n金額: ¥${exp.amount}\n内容: ${exp.description}\n\nこの支出を削除しますか？`)) {
-                      deleteExpense(exp.id);
-                  }
+                  if (confirm(`【確認】\n日付: ${exp.date}\nカテゴリー: ${exp.category}\n金額: ¥${exp.amount.toLocaleString()}\n\nこの支出を削除しますか？`)) {
+   　　　　　　　　　　 deleteExpense(exp.id);
+　　　　　　　　　　}
               };
               cellDelete.appendChild(deleteButton);
 
@@ -485,43 +525,54 @@
 
 
     // --- イベントハンドラ ---
-    document.getElementById('expense-form').addEventListener('submit', function(event) {
-      event.preventDefault();
-      const date = document.getElementById('date').value;
-      const user = document.getElementById('user').value;
-      const amount = parseInt(document.getElementById('amount').value, 10);
-      const store = document.getElementById('store').value;
-      const description = document.getElementById('description').value; // select要素の値を取得
+document.getElementById('expense-form').addEventListener('submit', async (event) => { // async を追加
+    event.preventDefault(); // デフォルトの送信動作をキャンセル
 
-      // ★ バリデーション：descriptionが空（未選択）でないかもチェック
-      if (!date || !user || isNaN(amount) || amount <= 0 || !store || !description) {
-          alert('すべての項目を正しく入力・選択してください。金額は0より大きい値を入力してください。');
-          return;
-      }
-      const expense = { id: Date.now() + Math.random(), date, user, amount, store, description };
-      expenses.push(expense);
-      saveData();
-      updateUI();
-      document.getElementById('expense-form').reset();
-      // フォームリセット後、descriptionのプレースホルダーを再表示
-      document.getElementById('description').value = "";
-    });
+    // --- フォームから値を取得 (ここは変更なし) ---
+    const date = document.getElementById('date').value;
+    const user = document.getElementById('user').value;
+    const amount = parseInt(document.getElementById('amount').value, 10);
+    const store = document.getElementById('store').value.trim(); // 前後の空白を除去
+    const category = document.getElementById('category').value;
 
-    function deleteExpense(id) {
-      const indexToDelete = expenses.findIndex(exp => exp.id === id);
-      if (indexToDelete === -1) return;
-      expenses.splice(indexToDelete, 1);
-      if (currentView === 'detail' && currentDetailPeriod) {
-          const remainingExpenses = expenses.filter(exp =>
-              exp.date >= currentDetailPeriod.start && exp.date <= currentDetailPeriod.end
-          );
-          if (remainingExpenses.length === 0) {
-              currentView = 'history';
-              currentDetailPeriod = null;
-          }
-      }
-      saveData();
-      updateUI();
+    // ★ バリデーションも 'category' をチェックするように修正
+    if (!date || !user || isNaN(amount) || amount <= 0 || !store || !category) {
+        alert('すべての項目を正しく入力・選択してください。\n金額は0より大きい値を入力してください。');
+        return; // 処理を中断
+    }
+
+    // ★ Firestoreに保存するデータオブジェクトを作成 (id は含めない)
+    const newExpenseData = {
+        date: date,
+        user: user,
+        amount: amount,
+        store: store,
+        category: category, 
+        // createdAt: serverTimestamp() // 必要なら追加
+    };
+
+    console.log("Firestoreにデータを追加します:", newExpenseData);
+
+    // ★ try...catch でエラー処理を追加
+    try {
+        // ★ Firestoreの "expenses" コレクションにデータを追加
+        const docRef = await addDoc(expensesCol, newExpenseData);
+        console.log("データが追加されました。ドキュメントID: ", docRef.id);
+
+        // ★ 成功時の処理: フォームリセットのみ
+        document.getElementById('expense-form').reset();
+        // ★ カテゴリ選択もリセット
+        document.getElementById('category').value = "";
+        document.getElementById('date').valueAsDate = new Date(); // 日付を今日に戻す
+
+        // ★ 成功時は expenses 配列操作や updateUI() は不要！
+
+    } catch (e) {
+        // ★ エラー発生時の処理
+        console.error("データの追加中にエラーが発生しました: ", e);
+        alert("データの追加に失敗しました。もう一度試してください。");
+    }
+});
     }
 
     // --- 表示切り替え関数 ---
@@ -542,6 +593,20 @@
         updateUI();
     }
 
+      async function deleteExpense(id) {
+        console.log("Firestoreからデータを削除します (ドキュメントID):", id);
+
+        const expenseDocRef = doc(db, "expenses", id);
+
+        try {
+            await deleteDoc(expenseDocRef);
+            console.log("ドキュメント (ID: " + id + ") の削除に成功しました。");
+        } catch (e) {
+            console.error("データの削除中にエラーが発生しました: ", e);
+            alert("データの削除に失敗しました。もう一度試してください。");
+        }
+    }
+  
     // --- UI更新の統合 ---
     // (updateUI は変更なし)
     function updateUI() {
@@ -570,15 +635,18 @@
     }
 
     // --- 初期化 ---
-    // (DOMContentLoaded は変更なし)
-    document.addEventListener('DOMContentLoaded', () => {
-        loadData();
-        const today = new Date();
-        document.getElementById('date').valueAsDate = today;
-        // ページ読み込み時にdescriptionのプレースホルダーを選択状態にする
-        document.getElementById('description').value = "";
-        updateUI();
-    });
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOM読み込み完了");
+
+    // Firestoreデータの監視を開始
+    subscribeToExpenses();
+
+    // 日付入力欄に今日の日付を設定
+    const today = new Date();
+    document.getElementById('date').valueAsDate = today;
+
+    console.log("家計管理アプリが初期化されました。");
+});
 
   </script>
 </body>
