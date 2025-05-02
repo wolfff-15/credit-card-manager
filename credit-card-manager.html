@@ -34,6 +34,7 @@
     }
     input[type="date"], select {
         min-width: 120px;
+        flex-grow: 1; /* selectも伸びるように調整 */
     }
      input[type="number"], input[type="text"] {
         flex-grow: 1;
@@ -208,7 +209,18 @@
     </select>
     <input type="number" id="amount" placeholder="金額" required min="0">
     <input type="text" id="store" placeholder="店舗" required>
-    <input type="text" id="description" placeholder="内容" required>
+    <!-- ★★★ここを変更★★★ -->
+    <select id="description" required>
+        <option value="" disabled selected>内容を選択</option>
+        <option value="食費">食費</option>
+        <option value="日用品費">日用品費</option>
+        <option value="電気代">電気代</option>
+        <option value="ガス代">ガス代</option>
+        <option value="水道代">水道代</option>
+        <option value="インターネット回線料">インターネット回線料</option>
+        <option value="その他">その他</option>
+    </select>
+    <!-- ★★★変更ここまで★★★ -->
     <button type="submit">追加</button>
   </form>
 
@@ -252,7 +264,7 @@
           <th>利用者</th>
           <th>金額</th>
           <th>店舗</th>
-          <th>内容</th>
+          <th>内容</th> <!-- テーブルヘッダーは変更なし -->
           <th>削除</th>
         </tr>
       </thead>
@@ -430,10 +442,9 @@
           tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">この期間の支出はありません。</td></tr>';
       } else {
           filteredExpenses.forEach(exp => {
-              // (行生成のロジックは変更なし)
               const row = document.createElement('tr');
               row.dataset.expenseId = exp.id;
-              // ...(td要素の追加は省略)...
+
               const cellDate = document.createElement('td');
               cellDate.textContent = exp.date;
               const cellUser = document.createElement('td');
@@ -443,7 +454,7 @@
               const cellStore = document.createElement('td');
               cellStore.textContent = exp.store;
               const cellDescription = document.createElement('td');
-              cellDescription.textContent = exp.description;
+              cellDescription.textContent = exp.description; // ここは取得した値をそのまま表示するので変更不要
               const cellDelete = document.createElement('td');
               const deleteButton = document.createElement('button');
               deleteButton.textContent = '削除';
@@ -474,17 +485,17 @@
 
 
     // --- イベントハンドラ ---
-    // (expense-form submit, deleteExpense は変更なし)
     document.getElementById('expense-form').addEventListener('submit', function(event) {
       event.preventDefault();
       const date = document.getElementById('date').value;
       const user = document.getElementById('user').value;
       const amount = parseInt(document.getElementById('amount').value, 10);
       const store = document.getElementById('store').value;
-      const description = document.getElementById('description').value;
+      const description = document.getElementById('description').value; // select要素の値を取得
 
-      if (!date || isNaN(amount) || amount <= 0 || !store || !description) {
-          alert('すべての項目を正しく入力してください。金額は0より大きい値を入力してください。');
+      // ★ バリデーション：descriptionが空（未選択）でないかもチェック
+      if (!date || !user || isNaN(amount) || amount <= 0 || !store || !description) {
+          alert('すべての項目を正しく入力・選択してください。金額は0より大きい値を入力してください。');
           return;
       }
       const expense = { id: Date.now() + Math.random(), date, user, amount, store, description };
@@ -492,6 +503,8 @@
       saveData();
       updateUI();
       document.getElementById('expense-form').reset();
+      // フォームリセット後、descriptionのプレースホルダーを再表示
+      document.getElementById('description').value = "";
     });
 
     function deleteExpense(id) {
@@ -562,6 +575,8 @@
         loadData();
         const today = new Date();
         document.getElementById('date').valueAsDate = today;
+        // ページ読み込み時にdescriptionのプレースホルダーを選択状態にする
+        document.getElementById('description').value = "";
         updateUI();
     });
 
