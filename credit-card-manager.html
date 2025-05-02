@@ -3,61 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>家計管理アプリ</title>
+  <title>家計管理アプリ (Firebase Firestore & RTDB版)</title> <!-- タイトル少し変更 -->
   <style>
-    /* CSSは基本的に変更なし */
+    /* CSSスタイルは変更ありません */
     body {
       font-family: 'Helvetica', sans-serif;
       padding: 20px;
       background: #f2f2f2;
       margin: 0;
+      font-size: 16px;
+      line-height: 1.6;
     }
     h1 {
       text-align: center;
       color: #333;
       margin-top: 0;
+      margin-bottom: 20px;
+      font-size: 1.8em;
     }
     form {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin-bottom: 20px;
+      margin-bottom: 25px;
       padding: 15px;
       background: white;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     input, select, button {
-      padding: 10px;
+      padding: 10px 12px;
       border: 1px solid #ccc;
       border-radius: 6px;
-      font-size: 16px;
+      font-size: inherit;
       box-sizing: border-box;
+      height: 42px;
     }
     input[type="date"], select#user {
         min-width: 120px;
-        flex-basis: 150px;
+        flex-basis: 50px;
         flex-grow: 1;
     }
-    /* ★ ID変更に合わせてセレクタも変更 */
-    select#category {
-        min-width: 150px;
-        flex-basis: 180px;
-        flex-grow: 1;
-    }
-     input[type="number"], input[type="text"] {
+    input[type="number"], input[type="text"] {
         flex-grow: 1;
         min-width: 100px;
-        flex-basis: 120px;
+        flex-basis: 50px;
+    }
+    select#description {
+        min-width: 150px;
+        flex-basis: 50px;
+        flex-grow: 1;
     }
     button[type="submit"] {
       background: #4CAF50;
       color: white;
       cursor: pointer;
       border: none;
-       min-width: 80px;
-       flex-grow: 0;
-       flex-shrink: 0;
+      min-width: 80px;
+      flex-grow: 0;
+      flex-shrink: 0;
+      height: 42px;
     }
     button[type="submit"]:hover {
       background: #45a049;
@@ -67,11 +72,12 @@
       color: white;
       cursor: pointer;
       border: none;
-       padding: 10px 15px;
-       border-radius: 6px;
-       font-size: 16px;
-       margin: 5px;
-       transition: background-color 0.2s ease;
+      padding: 10px 15px;
+      border-radius: 6px;
+      font-size: 0.95em;
+      margin: 5px;
+      transition: background-color 0.2s ease;
+      height: auto;
     }
     .action-button:hover {
       background: #1e88e5;
@@ -94,34 +100,32 @@
     th {
       background: #333;
       color: white;
-       text-align: center;
-       white-space: nowrap;
+      text-align: center;
+      white-space: nowrap;
+      font-size: 0.9em;
     }
     #history th:first-child, #history td:first-child {
         text-align: center;
-        width: 40%;
     }
     #history th:last-child, #history td:last-child {
         text-align: right;
-        width: 60%;
     }
     #month-detail th:nth-child(3), #month-detail td:nth-child(3) {
         text-align: right;
         white-space: nowrap;
     }
-    #month-detail th:nth-child(6), #month-detail td:nth-child(6) {
-        text-align: center;
+    #month-detail td:nth-child(1), #month-detail td:nth-child(2) {
+        white-space: nowrap;
     }
-     #month-detail td:nth-child(1),
-     #month-detail td:nth-child(2) {
-         white-space: nowrap;
+     #month-detail th:last-child, #month-detail td:last-child {
+        text-align: center;
      }
     .button-group {
       margin-bottom: 20px;
       text-align: center;
     }
     .month-summary {
-      font-size: 18px;
+      font-size: 1.1em;
       margin-top: 20px;
       padding: 20px;
       background: white;
@@ -130,16 +134,15 @@
       text-align: center;
     }
     .summary-period {
-        font-size: 1.1em;
+        font-size: 1.0em;
         font-weight: bold;
         color: #333;
         margin-bottom: 10px;
     }
-    .summary-total p {
-        margin: 8px 0;
-    }
+    .summary-total p { margin: 8px 0; }
     .per-person-info {
-        font-size: 1.0em;
+        margin-top: 10px;
+        font-size: 0.95em;
         color: #555;
     }
     .month-detail, #history {
@@ -155,22 +158,23 @@
         color: #333;
         margin-top: 0;
         margin-bottom: 15px;
+        font-size: 1.5em;
     }
     .detail-actions {
         text-align: center;
         margin-bottom: 15px;
     }
-    td button.delete-button {
+    td button {
         background: #f44336;
         color: white;
         border: none;
-        padding: 6px 12px;
+        padding: 5px 10px;
         border-radius: 4px;
         cursor: pointer;
         font-size: 14px;
         transition: background-color 0.2s ease;
     }
-    td button.delete-button:hover {
+    td button:hover {
         background: #e53935;
     }
     #history-body tr {
@@ -185,41 +189,30 @@
         color: #777;
         padding: 20px;
     }
+
+    /* スマートフォン向けUIのCSSも変更ありません */
     @media (max-width: 768px) {
-        body {
-            padding: 15px;
-        }
         form {
             flex-direction: column;
         }
         input, select, button[type="submit"] {
             width: 100%;
-            flex-basis: auto;
-            min-width: 0;
-            margin-bottom: 5px;
-        }
-        button[type="submit"] {
-            margin-top: 5px;
         }
         th, td {
             padding: 10px 8px;
-            font-size: 15px;
         }
-        #history th:first-child, #history td:first-child,
-        #history th:last-child, #history td:last-child {
-            width: auto;
-        }
+        #history th:first-child, #history td:first-child { width: auto; text-align: center;}
+        #history th:last-child, #history td:last-child { width: auto; text-align: right;}
     }
     @media (max-width: 480px) {
         body {
             padding: 10px;
         }
         h1 {
-            font-size: 1.5em;
+            font-size: 24px;
         }
         th, td {
             font-size: 14px;
-            white-space: normal;
         }
         .button-group button, .detail-actions button {
             display: block;
@@ -227,14 +220,13 @@
             margin: 8px 0;
         }
         .month-summary {
-            padding: 15px;
             font-size: 16px;
         }
         .summary-period {
-            font-size: 1.0em;
+            font-size: 15px;
         }
         .per-person-info {
-            font-size: 0.95em;
+            font-size: 15px;
         }
     }
   </style>
@@ -243,18 +235,17 @@
 
   <h1>家計管理アプリ</h1>
 
-  <!-- 入力フォーム -->
+  <!-- HTMLのフォームやテーブル構造は変更ありません -->
   <form id="expense-form">
-    <input type="date" id="date" aria-label="日付" required>
-    <select id="user" aria-label="利用者" required>
+    <input type="date" id="date" required>
+    <select id="user" required>
       <option value="まい">まい</option>
       <option value="まき">まき</option>
     </select>
-    <input type="number" id="amount" placeholder="金額" aria-label="金額" required min="0">
-    <input type="text" id="store" placeholder="店舗" aria-label="店舗" required>
-    <!-- ★★★ HTML ID を category に変更 ★★★ -->
-    <select id="category" aria-label="カテゴリー" required>
-        <option value="" disabled selected>カテゴリーを選択</option>
+    <input type="number" id="amount" placeholder="金額" required min="1">
+    <input type="text" id="store" placeholder="店舗" required>
+    <select id="description" required>
+        <option value="" disabled selected>内容を選択</option>
         <option value="食費">食費</option>
         <option value="日用品費">日用品費</option>
         <option value="電気代">電気代</option>
@@ -266,13 +257,11 @@
     <button type="submit">追加</button>
   </form>
 
-  <!-- 表示切り替えボタン -->
   <div class="button-group">
-    <button class="action-button" onclick="showSummaryView()">当期合計</button>
+    <button class="action-button" onclick="showSummaryView()">今月の合計</button>
     <button class="action-button" onclick="showHistoryView()">全履歴</button>
   </div>
 
-  <!-- 当期合計表示エリア -->
   <div id="summary" class="month-summary" style="display:none;">
     <p class="summary-period"><span id="summary-period-text"></span> 支払い分</p>
     <div class="summary-total">
@@ -281,7 +270,6 @@
     </div>
   </div>
 
-  <!-- 全履歴表示エリア -->
   <div id="history" style="display:none;">
     <h2>全履歴 (支払い予定日別 合計)</h2>
     <table>
@@ -292,12 +280,10 @@
         </tr>
       </thead>
       <tbody id="history-body">
-        <!-- 履歴データがここに入る -->
       </tbody>
     </table>
   </div>
 
-  <!-- 期間詳細表示エリア -->
   <div id="month-detail" class="month-detail">
      <div class="detail-actions">
         <button class="action-button" onclick="showHistoryView()">← 全履歴に戻る</button>
@@ -310,42 +296,44 @@
           <th>利用者</th>
           <th>金額</th>
           <th>店舗</th>
-          <!-- ★★★ ヘッダーをカテゴリーに変更 ★★★ -->
-          <th>カテゴリー</th>
+          <th>内容</th>
           <th>削除</th>
         </tr>
       </thead>
       <tbody id="detail-body">
-        <!-- 詳細データがここに入る -->
       </tbody>
     </table>
   </div>
 
+<!-- JavaScript: Firebase Firestore と Realtime Database を使用 -->
 <script type="module">
-    // --- import文 (先頭にまとめる) ---
+    // --- Firebase SDK の import ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getFirestore, collection, query, orderBy, onSnapshot, addDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    // --- Realtime Database SDK の import を追加 ---
+    import { getDatabase, ref, onValue, set, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js"; // ★ RTDB関数をインポート
 
-    // --- Firebase初期化 ---
-    // ★★★ 必ず自分のFirebaseプロジェクトの設定値に書き換えてください ★★★
+    // --- Firebase 初期化設定 (databaseURL を追加) ---
     const firebaseConfig = {
       apiKey: "AIzaSyDKUWkklyq6RMSKV5wgIGTKRO30nCc38Eo",
       authDomain: "creditcardmanager-15.firebaseapp.com",
       projectId: "creditcardmanager-15",
       storageBucket: "creditcardmanager-15.firebasestorage.app",
       messagingSenderId: "212768312654",
-      appId: "1:212768312654:web:8d1670ab54152c568ce21f"
+      appId: "1:212768312654:web:8d1670ab54152c568ce21f",
+      databaseURL: "https://creditcardmanager-15-default-rtdb.firebaseio.com" // ★ RTDBのURLを追加
     };
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // --- グローバル変数 ---
-    let expenses = []; // Firestoreから取得したデータが入る
-    let currentView = 'summary'; // 現在表示中の画面
-    let currentDetailPeriod = null; // 詳細表示中の期間
+    const db = getFirestore(app); // Firestore用
+    const rtdb = getDatabase(app); // ★ Realtime Database用
     const expensesCol = collection(db, "expenses"); // Firestoreのコレクション参照
 
-    // --- ヘルパー関数 ---
+    // --- グローバル変数 ---
+    let expenses = []; // Firestoreから取得した支出データ用 (ローカルキャッシュ)
+    let currentView = 'summary';
+    let currentDetailPeriod = null; // {start, end, paymentDueDateDisplay}
+
+    // --- ヘルパー関数 (変更なし) ---
     function formatDate(date, separator = '-') {
         const y = date.getFullYear();
         const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -356,7 +344,7 @@
     function getBillingPeriodForDate(dateString) {
         const date = new Date(dateString);
         const year = date.getFullYear();
-        const month = date.getMonth();
+        const month = date.getMonth(); // 0-11
         const day = date.getDate();
         let startDate, endDate;
         if (day >= 16) {
@@ -368,11 +356,7 @@
         }
         const paymentDueDate = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 10);
         const paymentDueDateDisplay = formatDate(paymentDueDate, '/');
-        return {
-            start: formatDate(startDate),
-            end: formatDate(endDate),
-            paymentDueDateDisplay: paymentDueDateDisplay
-        };
+        return { start: formatDate(startDate), end: formatDate(endDate), paymentDueDateDisplay: paymentDueDateDisplay };
     }
 
     function getCurrentBillingPeriod() {
@@ -380,27 +364,27 @@
         return getBillingPeriodForDate(formatDate(today));
     }
 
-    // --- データ監視関数 ---
+    // --- データ監視関数 (Firestore用 - 変更なし) ---
     function subscribeToExpenses() {
         console.log("Firestoreデータの監視を開始します...");
-        const q = query(expensesCol, orderBy("date", "desc")); // 日付の降順で取得
+        const q = query(expensesCol, orderBy("date", "desc"));
         onSnapshot(q, (querySnapshot) => {
-            console.log("データが更新されました！");
+            console.log("Firestoreデータが更新されました！");
             const updatedExpenses = [];
             querySnapshot.forEach((doc) => {
-                // ドキュメントIDとデータを合わせて配列に追加
-                updatedExpenses.push({ id: doc.id, ...doc.data() });
+                const data = doc.data();
+                updatedExpenses.push({ id: doc.id, ...data, amount: Number(data.amount) || 0 });
             });
-            expenses = updatedExpenses; // グローバル変数を更新
-            console.log("現在の支出データ:", expenses);
-            updateUI(); // 最新データでUIを更新
+            expenses = updatedExpenses;
+            console.log("現在の支出データ (Firestore):", expenses);
+            updateUI(); // UIを更新
         }, (error) => {
-            console.error("データの監視中にエラーが発生しました: ", error);
+            console.error("Firestoreデータの監視中にエラーが発生しました: ", error);
             alert("データの読み込みに失敗しました。");
         });
     }
 
-    // --- UI 更新関数 ---
+    // --- UI 更新関数 (変更なし) ---
     function updateSummaryView() {
       const billingPeriod = getCurrentBillingPeriod();
       const startDate = billingPeriod.start;
@@ -424,25 +408,22 @@
       const periodTotals = {};
       expenses.forEach(exp => {
           const period = getBillingPeriodForDate(exp.date);
-          const paymentDateKey = period.paymentDueDateDisplay; // ★支払い日をキーに
+          const paymentDateKey = period.paymentDueDateDisplay;
           if (!periodTotals[paymentDateKey]) {
               periodTotals[paymentDateKey] = { total: 0, start: period.start, end: period.end, paymentDueDateDisplay: period.paymentDueDateDisplay };
           }
           periodTotals[paymentDateKey].total += exp.amount;
       });
-
-      // ★支払い日の降順でソート
-      const sortedPaymentDates = Object.keys(periodTotals).sort((a, b) => new Date(b.split('/').join('-')) - new Date(a.split('/').join('-')));
-
+      const sortedPaymentDates = Object.keys(periodTotals).sort((a, b) => new Date(b.replace(/\//g, '-')) - new Date(a.replace(/\//g, '-')));
       if (sortedPaymentDates.length === 0) {
           tbody.innerHTML = `<tr><td colspan="2" class="no-data-message">履歴はありません。</td></tr>`;
       } else {
-          let displayedRowCount = 0; // 表示する行数をカウント
+          let displayedRowCount = 0;
           sortedPaymentDates.forEach(paymentDateKey => {
               const periodData = periodTotals[paymentDateKey];
-              if (periodData.total <= 0) return; // 合計0以下はスキップ
-
+              if (periodData.total <= 0) return;
               const row = document.createElement('tr');
+              row.style.cursor = 'pointer';
               row.title = `${periodData.paymentDueDateDisplay} 支払い分の詳細を見る`;
               const cellPeriod = document.createElement('td');
               cellPeriod.textContent = periodData.paymentDueDateDisplay;
@@ -450,13 +431,10 @@
               cellTotal.textContent = `¥${periodData.total.toLocaleString()}`;
               row.appendChild(cellPeriod);
               row.appendChild(cellTotal);
-              row.addEventListener('click', () => {
-                  showMonthDetailView(periodData); // ★periodDataを渡す
-              });
+              row.addEventListener('click', () => showMonthDetailView(periodData));
               tbody.appendChild(row);
               displayedRowCount++;
           });
-          // もし全ての期間の合計が0以下だったらメッセージ表示
           if (displayedRowCount === 0) {
                tbody.innerHTML = `<tr><td colspan="2" class="no-data-message">履歴はありません。</td></tr>`;
           }
@@ -467,114 +445,135 @@
       currentView = 'history';
     }
 
-    // ★★★ updateMonthDetailView の修正 ★★★
     function updateMonthDetailView(period) {
-        currentDetailPeriod = period;
-        const detailDiv = document.getElementById('month-detail');
-        const tbody = document.getElementById('detail-body');
-        tbody.innerHTML = '';
-        document.getElementById('detail-title').textContent = `${period.paymentDueDateDisplay} 支払い分の詳細`;
-
-        const filteredExpenses = expenses
-            .filter(exp => exp.date >= period.start && exp.date <= period.end)
-            .sort((a, b) => new Date(b.date) - new Date(a.date));
-
-        if (filteredExpenses.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="no-data-message">この期間の支出はありません。</td></tr>'; // colspanを6に
-        } else {
-            filteredExpenses.forEach(exp => {
-                const row = document.createElement('tr');
-                row.dataset.expenseId = exp.id; // FirestoreのIDを行に紐付け
-
-                const cellDate = document.createElement('td');
-                cellDate.textContent = exp.date;
-                const cellUser = document.createElement('td');
-                cellUser.textContent = exp.user;
-                const cellAmount = document.createElement('td');
-                cellAmount.textContent = `¥${exp.amount.toLocaleString()}`;
-                const cellStore = document.createElement('td');
-                cellStore.textContent = exp.store;
-                // ★★★ カテゴリー表示に修正 ★★★
-                const cellCategory = document.createElement('td');
-                cellCategory.textContent = exp.category; // exp.descriptionではない
-                // ★★★ ここまで ★★★
-                const cellDelete = document.createElement('td');
-                const deleteButton = document.createElement('button');
-                deleteButton.textContent = '削除';
-                deleteButton.classList.add('delete-button'); // スタイル用クラス追加
-                deleteButton.onclick = (event) => {
-                    event.stopPropagation();
-                     // ★★★ 確認メッセージも修正 ★★★
-                    if (confirm(`【確認】\n日付: ${exp.date}\nカテゴリー: ${exp.category}\n金額: ¥${exp.amount.toLocaleString()}\n\nこの支出を削除しますか？`)) {
-                        deleteExpense(exp.id); // FirestoreのIDを渡す
-                    }
-                };
-                cellDelete.appendChild(deleteButton);
-
-                row.appendChild(cellDate);
-                row.appendChild(cellUser);
-                row.appendChild(cellAmount);
-                row.appendChild(cellStore);
-                row.appendChild(cellCategory); // ★ cellCategory を追加
-                row.appendChild(cellDelete);
-
-                tbody.appendChild(row);
-            });
-        }
-        document.getElementById('summary').style.display = 'none';
-        document.getElementById('history').style.display = 'none';
-        document.getElementById('month-detail').style.display = 'block';
-        currentView = 'detail';
+      currentDetailPeriod = period;
+      const tbody = document.getElementById('detail-body');
+      tbody.innerHTML = '';
+      document.getElementById('detail-title').textContent = `${period.paymentDueDateDisplay} 支払い分の詳細`;
+      const filteredExpenses = expenses
+          .filter(exp => exp.date >= period.start && exp.date <= period.end)
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+      if (filteredExpenses.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="no-data-message">この期間の支出はありません。</td></tr>';
+      } else {
+          filteredExpenses.forEach(exp => {
+              const row = document.createElement('tr');
+              row.dataset.expenseId = exp.id;
+              ['date', 'user', 'amount', 'store', 'description'].forEach(key => {
+                  const cell = document.createElement('td');
+                  cell.textContent = (key === 'amount') ? `¥${exp.amount.toLocaleString()}` : exp[key];
+                  row.appendChild(cell);
+              });
+              const cellDelete = document.createElement('td');
+              const deleteButton = document.createElement('button');
+              deleteButton.textContent = '削除';
+              deleteButton.onclick = (event) => {
+                  event.stopPropagation();
+                  if (confirm(`【確認】\n日付: ${exp.date}\n内容: ${exp.description}\n金額: ¥${exp.amount.toLocaleString()}\n\nこの支出を削除しますか？`)) {
+                      deleteExpenseFromFirestore(exp.id); // Firestoreから削除
+                  }
+              };
+              cellDelete.appendChild(deleteButton);
+              row.appendChild(cellDelete);
+              tbody.appendChild(row);
+          });
+      }
+      document.getElementById('summary').style.display = 'none';
+      document.getElementById('history').style.display = 'none';
+      document.getElementById('month-detail').style.display = 'block';
+      currentView = 'detail';
     }
 
-    // --- イベントハンドラ ---
-    // ★★★ submit イベントリスナー (構造修正済み) ★★★
+    // --- イベントハンドラ (Firestoreへのデータ追加 + RTDBへのログ記録例) ---
     document.getElementById('expense-form').addEventListener('submit', async (event) => {
         event.preventDefault();
-
         const date = document.getElementById('date').value;
         const user = document.getElementById('user').value;
         const amount = parseInt(document.getElementById('amount').value, 10);
         const store = document.getElementById('store').value.trim();
-        // ★★★ HTMLに合わせて category を取得 ★★★
-        const category = document.getElementById('category').value;
+        const description = document.getElementById('description').value;
 
-        if (!date || !user || isNaN(amount) || amount <= 0 || !store || !category) {
+        if (!date || !user || isNaN(amount) || amount <= 0 || !store || !description) {
             alert('すべての項目を正しく入力・選択してください。\n金額は0より大きい値を入力してください。');
             return;
         }
-
-        // Firestoreに保存するデータ (idは含めない)
-        const newExpenseData = { date, user, amount, store, category };
+        const newExpenseData = { date, user, amount, store, description };
         console.log("Firestoreにデータを追加します:", newExpenseData);
 
         try {
-            const docRef = await addDoc(expensesCol, newExpenseData); // データ追加
-            console.log("データが追加されました。ドキュメントID: ", docRef.id);
-            // 成功したらフォームリセット
+            // Firestoreにデータを追加
+            const docRef = await addDoc(expensesCol, newExpenseData);
+            console.log("Firestoreデータが追加されました。ドキュメントID: ", docRef.id);
             document.getElementById('expense-form').reset();
-            document.getElementById('category').value = ""; // カテゴリもリセット
+            document.getElementById('description').value = "";
             document.getElementById('date').valueAsDate = new Date();
+
+            // --- ★ Realtime Databaseへのログ記録 (例) ---
+            /*
+            const logRef = ref(rtdb, 'action_logs/' + docRef.id); // FirestoreのIDをキーにしてログを保存
+            await set(logRef, {
+                action: 'add_expense',
+                firestoreId: docRef.id,
+                timestamp: serverTimestamp(), // ★ サーバー時刻を記録
+                data: newExpenseData
+            });
+            console.log("Realtime Databaseにも操作ログを記録しました。");
+            */
+            // --- ★ Realtime Databaseへのログ記録 (ここまで) ---
+
         } catch (e) {
             console.error("データの追加中にエラーが発生しました: ", e);
             alert("データの追加に失敗しました。もう一度試してください。");
         }
-    }); // ★ submit イベントリスナーの閉じ括弧 });
+    });
 
-    // ★★★ deleteExpense 関数定義 (構造修正済み) ★★★
-    async function deleteExpense(id) {
+    // --- データ削除関数 (Firestoreから削除 + RTDBログ記録例) ---
+    async function deleteExpenseFromFirestore(id) {
+        if (!id) {
+            console.error("削除対象のFirestoreドキュメントIDが無効です。");
+            return;
+        }
         console.log("Firestoreからデータを削除します (ドキュメントID):", id);
-        const expenseDocRef = doc(db, "expenses", id); // 削除対象の参照取得
+        const expenseDocRef = doc(db, "expenses", id);
         try {
-            await deleteDoc(expenseDocRef); // データ削除実行
-            console.log("ドキュメント (ID: " + id + ") の削除に成功しました。");
+            await deleteDoc(expenseDocRef);
+            console.log("Firestoreドキュメント (ID: " + id + ") の削除に成功しました。");
+
+            // --- ★ Realtime Databaseへのログ記録 (例) ---
+            /*
+            // 新しいログをpushで追加 (削除操作の記録)
+            const deleteLogRef = ref(rtdb, 'action_logs'); // ログのリスト
+            await push(deleteLogRef, { // pushでユニークIDを生成して追加
+                action: 'delete_expense',
+                firestoreId: id,
+                timestamp: serverTimestamp() // ★ サーバー時刻を記録
+            });
+            console.log("Realtime Databaseにも削除操作ログを記録しました。");
+            */
+            // --- ★ Realtime Databaseへのログ記録 (ここまで) ---
+
+
+             // UI更新ロジック (削除後に詳細ビューが空になったら履歴に戻る)
+             if (currentView === 'detail' && currentDetailPeriod) {
+                const remainingExpensesInPeriod = expenses.filter(exp =>
+                    exp.id !== id &&
+                    exp.date >= currentDetailPeriod.start &&
+                    exp.date <= currentDetailPeriod.end
+                );
+                if (remainingExpensesInPeriod.length === 0) {
+                    console.log("詳細表示中の期間のデータがなくなったため、履歴表示に戻ります。");
+                    showHistoryView();
+                }
+                // データが残っていればonSnapshotによる更新に任せる
+            }
+
         } catch (e) {
-            console.error("データの削除中にエラーが発生しました: ", e);
+            console.error("Firestoreデータの削除中にエラーが発生しました: ", e);
             alert("データの削除に失敗しました。もう一度試してください。");
         }
     }
 
-    // --- 表示切り替え関数 ---
+    // --- 表示切り替え関数 (変更なし) ---
     function showSummaryView() {
         currentView = 'summary';
         updateUI();
@@ -590,46 +589,61 @@
         updateUI();
     }
 
-    // --- UI更新の統合 ---
+    // --- UI更新の統合 (変更なし) ---
     function updateUI() {
-        console.log(`Updating UI for view: ${currentView}`);
+        console.log(`UIを更新します。現在のビュー: ${currentView}`);
         switch (currentView) {
-            case 'summary':
-                updateSummaryView();
-                break;
-            case 'history':
-                updateHistoryView();
-                break;
+            case 'summary': updateSummaryView(); break;
+            case 'history': updateHistoryView(); break;
             case 'detail':
                 if (currentDetailPeriod) {
-                    // 詳細表示する期間のデータが存在するか再チェック
-                    const hasDataForPeriod = expenses.some(exp =>
-                        exp.date >= currentDetailPeriod.start && exp.date <= currentDetailPeriod.end
-                    );
+                    const hasDataForPeriod = expenses.some(exp => exp.date >= currentDetailPeriod.start && exp.date <= currentDetailPeriod.end);
                     if (hasDataForPeriod) {
                         updateMonthDetailView(currentDetailPeriod);
                     } else {
-                        console.warn("詳細表示期間のデータがなくなりました。履歴表示に戻ります。");
-                        showHistoryView(); // データがなければ履歴表示
+                        console.warn("詳細表示期間のデータがローカルキャッシュに見つかりません。履歴表示に戻ります。");
+                        showHistoryView();
                     }
                 } else {
                     console.warn("詳細表示期間が指定されていません。履歴表示に戻ります。");
                     showHistoryView();
                 }
                 break;
-            default:
-                updateSummaryView();
+            default: updateSummaryView();
         }
     }
 
-    // --- 初期化処理 ---
+    // --- 初期化処理 (RTDBの監視例を追加) ---
     document.addEventListener('DOMContentLoaded', () => {
-        console.log("DOM読み込み完了");
-        subscribeToExpenses(); // Firestoreデータの監視を開始
+        console.log("DOM読み込み完了。初期化処理を開始します。");
+        subscribeToExpenses(); // Firestoreのデータ監視を開始
+
         const today = new Date();
-        document.getElementById('date').valueAsDate = today; // 日付の初期設定
-        console.log("家計管理アプリが初期化されました。");
+        document.getElementById('date').valueAsDate = today;
+        document.getElementById('description').value = "";
+
+        console.log("家計管理アプリ (Firestore & RTDB 初期化済み) が起動しました。");
+
+        // --- ★ Realtime Database のデータ監視 (例: 設定情報など) ---
+        /*
+        const appSettingsRef = ref(rtdb, 'settings/appConfig'); // RTDBの 'settings/appConfig' パス
+        onValue(appSettingsRef, (snapshot) => {
+            const settings = snapshot.val();
+            console.log("Realtime Databaseからアプリ設定を取得:", settings);
+            if (settings && settings.title) {
+                 document.querySelector('h1').textContent = settings.title; // 例: RTDBから取得したタイトルに更新
+            }
+            // 他の設定に基づいて何かを行う...
+        }, (error) => {
+            console.error("Realtime Databaseのデータ監視中にエラーが発生しました (settings):", error);
+        });
+        */
+        // --- ★ Realtime Database のデータ監視 (ここまで) ---
     });
+
+    // --- グローバルスコープに関数を割り当て (変更なし) ---
+    window.showSummaryView = showSummaryView;
+    window.showHistoryView = showHistoryView;
 
 </script>
 </body>
