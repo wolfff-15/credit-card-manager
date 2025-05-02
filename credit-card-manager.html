@@ -5,15 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>家計管理アプリ</title>
   <style>
-    /* CSSは変更なし */
+    /* CSSは基本的に変更なし */
     body {
       font-family: 'Helvetica', sans-serif;
       padding: 20px;
       background: #f2f2f2;
+      margin: 0;
     }
     h1 {
       text-align: center;
       color: #333;
+      margin-top: 0;
     }
     form {
       display: flex;
@@ -32,13 +34,21 @@
       font-size: 16px;
       box-sizing: border-box;
     }
-    input[type="date"], select {
+    input[type="date"], select#user {
         min-width: 120px;
-        flex-grow: 1; /* selectも伸びるように調整 */
+        flex-basis: 150px;
+        flex-grow: 1;
+    }
+    /* ★ ID変更に合わせてセレクタも変更 */
+    select#category {
+        min-width: 150px;
+        flex-basis: 180px;
+        flex-grow: 1;
     }
      input[type="number"], input[type="text"] {
         flex-grow: 1;
         min-width: 100px;
+        flex-basis: 120px;
     }
     button[type="submit"] {
       background: #4CAF50;
@@ -46,6 +56,8 @@
       cursor: pointer;
       border: none;
        min-width: 80px;
+       flex-grow: 0;
+       flex-shrink: 0;
     }
     button[type="submit"]:hover {
       background: #45a049;
@@ -59,6 +71,7 @@
        border-radius: 6px;
        font-size: 16px;
        margin: 5px;
+       transition: background-color 0.2s ease;
     }
     .action-button:hover {
       background: #1e88e5;
@@ -76,27 +89,32 @@
       padding: 12px 15px;
       border-bottom: 1px solid #ddd;
       text-align: left;
+      vertical-align: middle;
     }
     th {
       background: #333;
       color: white;
        text-align: center;
+       white-space: nowrap;
     }
-    /* ★ 履歴テーブルの「支払い予定日」列 */
     #history th:first-child, #history td:first-child {
-        /* width: 60%; */ /* 必要なら調整 */
         text-align: center;
+        width: 40%;
     }
-     /* ★ 履歴テーブルの金額列 */
     #history th:last-child, #history td:last-child {
-        /* width: 40%; */ /* 必要なら調整 */
         text-align: right;
+        width: 60%;
     }
-    #month-detail td:nth-child(3), #month-detail th:nth-child(3) {
+    #month-detail th:nth-child(3), #month-detail td:nth-child(3) {
         text-align: right;
+        white-space: nowrap;
     }
-     #month-detail td:last-child, #month-detail th:last-child {
+    #month-detail th:nth-child(6), #month-detail td:nth-child(6) {
         text-align: center;
+    }
+     #month-detail td:nth-child(1),
+     #month-detail td:nth-child(2) {
+         white-space: nowrap;
      }
     .button-group {
       margin-bottom: 20px;
@@ -105,21 +123,23 @@
     .month-summary {
       font-size: 18px;
       margin-top: 20px;
-      padding: 15px;
+      padding: 20px;
       background: white;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       text-align: center;
     }
-    .summary-period { /* 名前はperiodだが支払い日を表示 */
-        font-size: 16px; /* 少し大きく */
-        font-weight: bold; /* 少し太く */
+    .summary-period {
+        font-size: 1.1em;
+        font-weight: bold;
         color: #333;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
+    }
+    .summary-total p {
+        margin: 8px 0;
     }
     .per-person-info {
-        margin-top: 10px;
-        font-size: 17px;
+        font-size: 1.0em;
         color: #555;
     }
     .month-detail, #history {
@@ -133,52 +153,73 @@
     h2 {
         text-align: center;
         color: #333;
+        margin-top: 0;
         margin-bottom: 15px;
     }
     .detail-actions {
         text-align: center;
         margin-bottom: 15px;
     }
-    td button {
+    td button.delete-button {
         background: #f44336;
         color: white;
         border: none;
-        padding: 5px 10px;
+        padding: 6px 12px;
         border-radius: 4px;
         cursor: pointer;
         font-size: 14px;
+        transition: background-color 0.2s ease;
     }
-    td button:hover {
+    td button.delete-button:hover {
         background: #e53935;
     }
     #history-body tr {
         cursor: pointer;
+        transition: background-color 0.2s ease;
     }
     #history-body tr:hover {
         background-color: #f5f5f5;
     }
+    .no-data-message {
+        text-align: center;
+        color: #777;
+        padding: 20px;
+    }
     @media (max-width: 768px) {
+        body {
+            padding: 15px;
+        }
         form {
             flex-direction: column;
         }
         input, select, button[type="submit"] {
             width: 100%;
+            flex-basis: auto;
+            min-width: 0;
+            margin-bottom: 5px;
+        }
+        button[type="submit"] {
+            margin-top: 5px;
         }
         th, td {
             padding: 10px 8px;
+            font-size: 15px;
         }
-        #history th:first-child, #history td:first-child { width: auto; text-align: center;}
-        #history th:last-child, #history td:last-child { width: auto; text-align: right;}
+        #history th:first-child, #history td:first-child,
+        #history th:last-child, #history td:last-child {
+            width: auto;
+        }
     }
     @media (max-width: 480px) {
         body {
             padding: 10px;
         }
         h1 {
-            font-size: 24px;
+            font-size: 1.5em;
         }
         th, td {
             font-size: 14px;
+            white-space: normal;
         }
         .button-group button, .detail-actions button {
             display: block;
@@ -186,13 +227,14 @@
             margin: 8px 0;
         }
         .month-summary {
+            padding: 15px;
             font-size: 16px;
         }
         .summary-period {
-            font-size: 15px;
+            font-size: 1.0em;
         }
         .per-person-info {
-            font-size: 15px;
+            font-size: 0.95em;
         }
     }
   </style>
@@ -201,17 +243,18 @@
 
   <h1>家計管理アプリ</h1>
 
+  <!-- 入力フォーム -->
   <form id="expense-form">
-    <input type="date" id="date" required>
-    <select id="user" required>
+    <input type="date" id="date" aria-label="日付" required>
+    <select id="user" aria-label="利用者" required>
       <option value="まい">まい</option>
       <option value="まき">まき</option>
     </select>
-    <input type="number" id="amount" placeholder="金額" required min="0">
-    <input type="text" id="store" placeholder="店舗" required>
-    <!-- ★★★ここを変更★★★ -->
-    <select id="description" required>
-        <option value="" disabled selected>内容を選択</option>
+    <input type="number" id="amount" placeholder="金額" aria-label="金額" required min="0">
+    <input type="text" id="store" placeholder="店舗" aria-label="店舗" required>
+    <!-- ★★★ HTML ID を category に変更 ★★★ -->
+    <select id="category" aria-label="カテゴリー" required>
+        <option value="" disabled selected>カテゴリーを選択</option>
         <option value="食費">食費</option>
         <option value="日用品費">日用品費</option>
         <option value="電気代">電気代</option>
@@ -220,24 +263,26 @@
         <option value="インターネット回線料">インターネット回線料</option>
         <option value="その他">その他</option>
     </select>
-    <!-- ★★★変更ここまで★★★ -->
     <button type="submit">追加</button>
   </form>
 
+  <!-- 表示切り替えボタン -->
   <div class="button-group">
-    <button class="action-button" onclick="showSummaryView()">今月の合計</button>
+    <button class="action-button" onclick="showSummaryView()">当期合計</button>
     <button class="action-button" onclick="showHistoryView()">全履歴</button>
   </div>
 
+  <!-- 当期合計表示エリア -->
   <div id="summary" class="month-summary" style="display:none;">
-    <!-- ★ 表示テキスト変更 -->
     <p class="summary-period"><span id="summary-period-text"></span> 支払い分</p>
-    <p>合計: ¥<span id="monthly-total">0</span></p>
-    <p class="per-person-info">一人当たり: ¥<span id="per-person-total">0</span></p>
+    <div class="summary-total">
+        <p>合計: ¥<span id="monthly-total">0</span></p>
+        <p class="per-person-info">一人当たり: ¥<span id="per-person-total">0</span></p>
+    </div>
   </div>
 
+  <!-- 全履歴表示エリア -->
   <div id="history" style="display:none;">
-    <!-- ★ タイトル、ヘッダー変更 -->
     <h2>全履歴 (支払い予定日別 合計)</h2>
     <table>
       <thead>
@@ -247,15 +292,16 @@
         </tr>
       </thead>
       <tbody id="history-body">
+        <!-- 履歴データがここに入る -->
       </tbody>
     </table>
   </div>
 
+  <!-- 期間詳細表示エリア -->
   <div id="month-detail" class="month-detail">
      <div class="detail-actions">
         <button class="action-button" onclick="showHistoryView()">← 全履歴に戻る</button>
      </div>
-     <!-- ★ タイトルはJSで設定 -->
     <h2 id="detail-title">詳細</h2>
     <table>
       <thead>
@@ -264,41 +310,40 @@
           <th>利用者</th>
           <th>金額</th>
           <th>店舗</th>
-          <th>内容</th> <!-- テーブルヘッダーは変更なし -->
+          <!-- ★★★ ヘッダーをカテゴリーに変更 ★★★ -->
+          <th>カテゴリー</th>
           <th>削除</th>
         </tr>
       </thead>
       <tbody id="detail-body">
+        <!-- 詳細データがここに入る -->
       </tbody>
     </table>
   </div>
 
 <script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-  // ★ Firestoreを使うために追記 ★
-　import { getFirestore, collection, query, orderBy, onSnapshot, addDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+    // --- import文 (先頭にまとめる) ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getFirestore, collection, query, orderBy, onSnapshot, addDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-  // Your web app's Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyD...", // あなたの値に書き換える
-    authDomain: "creditc...", // あなたの値に書き換える
-    projectId: "creditc...", // あなたの値に書き換える
-    storageBucket: "creditc...", // あなたの値に書き換える
-    messagingSenderId: "21276...", // あなたの値に書き換える
-    appId: "1:2127..." // あなたの値に書き換える
-  };
+    // --- Firebase初期化 ---
+    // ★★★ 必ず自分のFirebaseプロジェクトの設定値に書き換えてください ★★★
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  // ★ Firestoreを初期化して、'db'変数で操作できるようにする ★
-  const db = getFirestore(app);
-    
-    let expenses = [];
-    let currentView = 'summary';
-    let currentDetailPeriod = null; // {start, end, paymentDueDateDisplay}
+    // --- グローバル変数 ---
+    let expenses = []; // Firestoreから取得したデータが入る
+    let currentView = 'summary'; // 現在表示中の画面
+    let currentDetailPeriod = null; // 詳細表示中の期間
+    const expensesCol = collection(db, "expenses"); // Firestoreのコレクション参照
 
     // --- ヘルパー関数 ---
     function formatDate(date, separator = '-') {
@@ -308,36 +353,25 @@
         return `${y}${separator}${m}${separator}${d}`;
     }
 
-    // ★ 期間計算と支払い日表示文字列を生成する関数
     function getBillingPeriodForDate(dateString) {
         const date = new Date(dateString);
         const year = date.getFullYear();
-        const month = date.getMonth(); // 0-11
+        const month = date.getMonth();
         const day = date.getDate();
-
         let startDate, endDate;
-
         if (day >= 16) {
-            // 今月16日～来月15日の期間
             startDate = new Date(year, month, 16);
             endDate = new Date(year, month + 1, 15);
         } else {
-            // 前月16日～今月15日の期間
             startDate = new Date(year, month - 1, 16);
             endDate = new Date(year, month, 15);
         }
-
-        // ★ 支払い日 (endDateの翌月10日) を計算
         const paymentDueDate = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 10);
-        const paymentDueDateDisplay = formatDate(paymentDueDate, '/'); // YYYY/MM/10 形式
-
+        const paymentDueDateDisplay = formatDate(paymentDueDate, '/');
         return {
-            start: formatDate(startDate), // YYYY-MM-DD
-            end: formatDate(endDate),     // YYYY-MM-DD
-            // ★ 表示用の支払い日文字列を追加（または display をこれに置き換える）
-            paymentDueDateDisplay: paymentDueDateDisplay, // YYYY/MM/DD 形式
-            // 参考: 元の期間表示
-            // originalDisplay: `${formatDate(startDate, '/')} - ${formatDate(endDate, '/')}`
+            start: formatDate(startDate),
+            end: formatDate(endDate),
+            paymentDueDateDisplay: paymentDueDateDisplay
         };
     }
 
@@ -346,237 +380,201 @@
         return getBillingPeriodForDate(formatDate(today));
     }
 
-
-    // --- データ永続化 ---
-// Firestoreのコレクションを参照するオブジェクトを取得
-// "expenses" という名前のコレクションを使うことにします。なければ自動で作られます。
-import { collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"; // 必要な関数をインポート
-
-const expensesCol = collection(db, "expenses"); // 'db'は初期化時に作成したFirestoreインスタンス
-
-// データをリアルタイムで監視し、変更があればUIを更新する関数
-function subscribeToExpenses() {
-    console.log("Firestoreデータの監視を開始します...");
-    // 日付(date)の降順でデータを取得するクエリを作成 (任意)
-    const q = query(expensesCol, orderBy("date", "desc"));
-
-    onSnapshot(q, (querySnapshot) => {
-        console.log("データが更新されました！");
-        const updatedExpenses = [];
-        querySnapshot.forEach((doc) => {
-            // ドキュメントのデータとIDを取得して配列に追加
-            updatedExpenses.push({ id: doc.id, ...doc.data() });
+    // --- データ監視関数 ---
+    function subscribeToExpenses() {
+        console.log("Firestoreデータの監視を開始します...");
+        const q = query(expensesCol, orderBy("date", "desc")); // 日付の降順で取得
+        onSnapshot(q, (querySnapshot) => {
+            console.log("データが更新されました！");
+            const updatedExpenses = [];
+            querySnapshot.forEach((doc) => {
+                // ドキュメントIDとデータを合わせて配列に追加
+                updatedExpenses.push({ id: doc.id, ...doc.data() });
+            });
+            expenses = updatedExpenses; // グローバル変数を更新
+            console.log("現在の支出データ:", expenses);
+            updateUI(); // 最新データでUIを更新
+        }, (error) => {
+            console.error("データの監視中にエラーが発生しました: ", error);
+            alert("データの読み込みに失敗しました。");
         });
-        expenses = updatedExpenses; // グローバル変数を更新
-        console.log("現在の支出データ:", expenses);
-        updateUI(); // UIを最新のデータで更新
-    }, (error) => {
-        // エラーハンドリング
-        console.error("データの監視中にエラーが発生しました: ", error);
-        alert("データの読み込みに失敗しました。");
-    });
-}
+    }
 
     // --- UI 更新関数 ---
-
-    // 「今月の合計」を更新して表示
     function updateSummaryView() {
       const billingPeriod = getCurrentBillingPeriod();
       const startDate = billingPeriod.start;
       const endDate = billingPeriod.end;
-
       const currentPeriodTotal = expenses
         .filter(exp => exp.date >= startDate && exp.date <= endDate)
         .reduce((sum, exp) => sum + exp.amount, 0);
-
       const perPersonTotal = Math.ceil(currentPeriodTotal / 2);
-
-      // ★ 支払い予定日を表示
       document.getElementById('summary-period-text').textContent = billingPeriod.paymentDueDateDisplay;
       document.getElementById('monthly-total').textContent = currentPeriodTotal.toLocaleString();
       document.getElementById('per-person-total').textContent = perPersonTotal.toLocaleString();
-
       document.getElementById('summary').style.display = 'block';
       document.getElementById('history').style.display = 'none';
       document.getElementById('month-detail').style.display = 'none';
       currentView = 'summary';
     }
 
-    // 全履歴（支払い予定日別合計）を更新して表示
     function updateHistoryView() {
       const tbody = document.getElementById('history-body');
       tbody.innerHTML = '';
-
-      const periodTotals = {}; // { 'YYYY-MM-DD(start)': { total: 0, start: '...', end: '...', paymentDueDateDisplay: '...' } }
+      const periodTotals = {};
       expenses.forEach(exp => {
           const period = getBillingPeriodForDate(exp.date);
-          const periodKey = period.start; // 開始日をキーに
-
-          if (!periodTotals[periodKey]) {
-              periodTotals[periodKey] = {
-                  total: 0,
-                  start: period.start,
-                  end: period.end,
-                  paymentDueDateDisplay: period.paymentDueDateDisplay // 支払い日表示を追加
-              };
+          const paymentDateKey = period.paymentDueDateDisplay; // ★支払い日をキーに
+          if (!periodTotals[paymentDateKey]) {
+              periodTotals[paymentDateKey] = { total: 0, start: period.start, end: period.end, paymentDueDateDisplay: period.paymentDueDateDisplay };
           }
-          periodTotals[periodKey].total += exp.amount;
+          periodTotals[paymentDateKey].total += exp.amount;
       });
 
-      const sortedPeriodKeys = Object.keys(periodTotals).sort().reverse();
+      // ★支払い日の降順でソート
+      const sortedPaymentDates = Object.keys(periodTotals).sort((a, b) => new Date(b.split('/').join('-')) - new Date(a.split('/').join('-')));
 
-      if (sortedPeriodKeys.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="2" style="text-align: center;">履歴はありません。</td></tr>';
+      if (sortedPaymentDates.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="2" class="no-data-message">履歴はありません。</td></tr>`;
       } else {
-          sortedPeriodKeys.forEach(periodKey => {
-              const periodData = periodTotals[periodKey];
-              if (periodData.total <= 0) return;
+          let displayedRowCount = 0; // 表示する行数をカウント
+          sortedPaymentDates.forEach(paymentDateKey => {
+              const periodData = periodTotals[paymentDateKey];
+              if (periodData.total <= 0) return; // 合計0以下はスキップ
 
               const row = document.createElement('tr');
-              row.style.cursor = 'pointer';
-              // ★ title属性も支払い日ベースに
               row.title = `${periodData.paymentDueDateDisplay} 支払い分の詳細を見る`;
-
               const cellPeriod = document.createElement('td');
-              // ★ 支払い予定日を表示
               cellPeriod.textContent = periodData.paymentDueDateDisplay;
               const cellTotal = document.createElement('td');
               cellTotal.textContent = `¥${periodData.total.toLocaleString()}`;
-
               row.appendChild(cellPeriod);
               row.appendChild(cellTotal);
               row.addEventListener('click', () => {
-                  // ★ 詳細表示にも支払い日情報を含む期間データを渡す
-                  showMonthDetailView({
-                      start: periodData.start,
-                      end: periodData.end,
-                      paymentDueDateDisplay: periodData.paymentDueDateDisplay
-                  });
+                  showMonthDetailView(periodData); // ★periodDataを渡す
               });
-
               tbody.appendChild(row);
+              displayedRowCount++;
           });
+          // もし全ての期間の合計が0以下だったらメッセージ表示
+          if (displayedRowCount === 0) {
+               tbody.innerHTML = `<tr><td colspan="2" class="no-data-message">履歴はありません。</td></tr>`;
+          }
       }
-
       document.getElementById('summary').style.display = 'none';
       document.getElementById('history').style.display = 'block';
       document.getElementById('month-detail').style.display = 'none';
       currentView = 'history';
     }
 
-    // 特定の期間の詳細を更新して表示
-    function updateMonthDetailView(period) { // period は {start, end, paymentDueDateDisplay}
-      currentDetailPeriod = period;
-      const detailDiv = document.getElementById('month-detail');
-      const tbody = document.getElementById('detail-body');
-      tbody.innerHTML = '';
-      // ★ タイトルを支払い日表示に更新
-      document.getElementById('detail-title').textContent = `${period.paymentDueDateDisplay} 支払い分の詳細`;
+    // ★★★ updateMonthDetailView の修正 ★★★
+    function updateMonthDetailView(period) {
+        currentDetailPeriod = period;
+        const detailDiv = document.getElementById('month-detail');
+        const tbody = document.getElementById('detail-body');
+        tbody.innerHTML = '';
+        document.getElementById('detail-title').textContent = `${period.paymentDueDateDisplay} 支払い分の詳細`;
 
-      const filteredExpenses = expenses
-          .filter(exp => exp.date >= period.start && exp.date <= period.end)
-          .sort((a, b) => new Date(b.date) - new Date(a.date));
+        const filteredExpenses = expenses
+            .filter(exp => exp.date >= period.start && exp.date <= period.end)
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-      if (filteredExpenses.length === 0) {
-          // このメッセージは期間内にデータがない場合なのでそのままでOK
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">この期間の支出はありません。</td></tr>';
-      } else {
-          filteredExpenses.forEach(exp => {
-              const row = document.createElement('tr');
-              row.dataset.expenseId = exp.id;
+        if (filteredExpenses.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="no-data-message">この期間の支出はありません。</td></tr>'; // colspanを6に
+        } else {
+            filteredExpenses.forEach(exp => {
+                const row = document.createElement('tr');
+                row.dataset.expenseId = exp.id; // FirestoreのIDを行に紐付け
 
-              const cellDate = document.createElement('td');
-              cellDate.textContent = exp.date;
-              const cellUser = document.createElement('td');
-              cellUser.textContent = exp.user;
-              const cellAmount = document.createElement('td');
-              cellAmount.textContent = `¥${exp.amount.toLocaleString()}`;
-              const cellStore = document.createElement('td');
-              cellStore.textContent = exp.store;
-              const cellDescription = document.createElement('td');
-              cellDescription.textContent = exp.description; // ここは取得した値をそのまま表示するので変更不要
-              const cellDelete = document.createElement('td');
-              const deleteButton = document.createElement('button');
-              deleteButton.textContent = '削除';
-              deleteButton.onclick = (event) => {
-                  event.stopPropagation();
-                  if (confirm(`【確認】\n日付: ${exp.date}\nカテゴリー: ${exp.category}\n金額: ¥${exp.amount.toLocaleString()}\n\nこの支出を削除しますか？`)) {
-   　　　　　　　　　　 deleteExpense(exp.id);
-　　　　　　　　　　}
-              };
-              cellDelete.appendChild(deleteButton);
+                const cellDate = document.createElement('td');
+                cellDate.textContent = exp.date;
+                const cellUser = document.createElement('td');
+                cellUser.textContent = exp.user;
+                const cellAmount = document.createElement('td');
+                cellAmount.textContent = `¥${exp.amount.toLocaleString()}`;
+                const cellStore = document.createElement('td');
+                cellStore.textContent = exp.store;
+                // ★★★ カテゴリー表示に修正 ★★★
+                const cellCategory = document.createElement('td');
+                cellCategory.textContent = exp.category; // exp.descriptionではない
+                // ★★★ ここまで ★★★
+                const cellDelete = document.createElement('td');
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = '削除';
+                deleteButton.classList.add('delete-button'); // スタイル用クラス追加
+                deleteButton.onclick = (event) => {
+                    event.stopPropagation();
+                     // ★★★ 確認メッセージも修正 ★★★
+                    if (confirm(`【確認】\n日付: ${exp.date}\nカテゴリー: ${exp.category}\n金額: ¥${exp.amount.toLocaleString()}\n\nこの支出を削除しますか？`)) {
+                        deleteExpense(exp.id); // FirestoreのIDを渡す
+                    }
+                };
+                cellDelete.appendChild(deleteButton);
 
-              row.appendChild(cellDate);
-              row.appendChild(cellUser);
-              row.appendChild(cellAmount);
-              row.appendChild(cellStore);
-              row.appendChild(cellDescription);
-              row.appendChild(cellDelete);
+                row.appendChild(cellDate);
+                row.appendChild(cellUser);
+                row.appendChild(cellAmount);
+                row.appendChild(cellStore);
+                row.appendChild(cellCategory); // ★ cellCategory を追加
+                row.appendChild(cellDelete);
 
-              tbody.appendChild(row);
-          });
-      }
-
-      document.getElementById('summary').style.display = 'none';
-      document.getElementById('history').style.display = 'none';
-      document.getElementById('month-detail').style.display = 'block';
-      currentView = 'detail';
+                tbody.appendChild(row);
+            });
+        }
+        document.getElementById('summary').style.display = 'none';
+        document.getElementById('history').style.display = 'none';
+        document.getElementById('month-detail').style.display = 'block';
+        currentView = 'detail';
     }
-
 
     // --- イベントハンドラ ---
-document.getElementById('expense-form').addEventListener('submit', async (event) => { // async を追加
-    event.preventDefault(); // デフォルトの送信動作をキャンセル
+    // ★★★ submit イベントリスナー (構造修正済み) ★★★
+    document.getElementById('expense-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
 
-    // --- フォームから値を取得 (ここは変更なし) ---
-    const date = document.getElementById('date').value;
-    const user = document.getElementById('user').value;
-    const amount = parseInt(document.getElementById('amount').value, 10);
-    const store = document.getElementById('store').value.trim(); // 前後の空白を除去
-    const category = document.getElementById('category').value;
+        const date = document.getElementById('date').value;
+        const user = document.getElementById('user').value;
+        const amount = parseInt(document.getElementById('amount').value, 10);
+        const store = document.getElementById('store').value.trim();
+        // ★★★ HTMLに合わせて category を取得 ★★★
+        const category = document.getElementById('category').value;
 
-    // ★ バリデーションも 'category' をチェックするように修正
-    if (!date || !user || isNaN(amount) || amount <= 0 || !store || !category) {
-        alert('すべての項目を正しく入力・選択してください。\n金額は0より大きい値を入力してください。');
-        return; // 処理を中断
-    }
+        if (!date || !user || isNaN(amount) || amount <= 0 || !store || !category) {
+            alert('すべての項目を正しく入力・選択してください。\n金額は0より大きい値を入力してください。');
+            return;
+        }
 
-    // ★ Firestoreに保存するデータオブジェクトを作成 (id は含めない)
-    const newExpenseData = {
-        date: date,
-        user: user,
-        amount: amount,
-        store: store,
-        category: category, 
-        // createdAt: serverTimestamp() // 必要なら追加
-    };
+        // Firestoreに保存するデータ (idは含めない)
+        const newExpenseData = { date, user, amount, store, category };
+        console.log("Firestoreにデータを追加します:", newExpenseData);
 
-    console.log("Firestoreにデータを追加します:", newExpenseData);
+        try {
+            const docRef = await addDoc(expensesCol, newExpenseData); // データ追加
+            console.log("データが追加されました。ドキュメントID: ", docRef.id);
+            // 成功したらフォームリセット
+            document.getElementById('expense-form').reset();
+            document.getElementById('category').value = ""; // カテゴリもリセット
+            document.getElementById('date').valueAsDate = new Date();
+        } catch (e) {
+            console.error("データの追加中にエラーが発生しました: ", e);
+            alert("データの追加に失敗しました。もう一度試してください。");
+        }
+    }); // ★ submit イベントリスナーの閉じ括弧 });
 
-    // ★ try...catch でエラー処理を追加
-    try {
-        // ★ Firestoreの "expenses" コレクションにデータを追加
-        const docRef = await addDoc(expensesCol, newExpenseData);
-        console.log("データが追加されました。ドキュメントID: ", docRef.id);
-
-        // ★ 成功時の処理: フォームリセットのみ
-        document.getElementById('expense-form').reset();
-        // ★ カテゴリ選択もリセット
-        document.getElementById('category').value = "";
-        document.getElementById('date').valueAsDate = new Date(); // 日付を今日に戻す
-
-        // ★ 成功時は expenses 配列操作や updateUI() は不要！
-
-    } catch (e) {
-        // ★ エラー発生時の処理
-        console.error("データの追加中にエラーが発生しました: ", e);
-        alert("データの追加に失敗しました。もう一度試してください。");
-    }
-});
+    // ★★★ deleteExpense 関数定義 (構造修正済み) ★★★
+    async function deleteExpense(id) {
+        console.log("Firestoreからデータを削除します (ドキュメントID):", id);
+        const expenseDocRef = doc(db, "expenses", id); // 削除対象の参照取得
+        try {
+            await deleteDoc(expenseDocRef); // データ削除実行
+            console.log("ドキュメント (ID: " + id + ") の削除に成功しました。");
+        } catch (e) {
+            console.error("データの削除中にエラーが発生しました: ", e);
+            alert("データの削除に失敗しました。もう一度試してください。");
+        }
     }
 
     // --- 表示切り替え関数 ---
-    // (showSummaryView, showHistoryView は変更なし)
     function showSummaryView() {
         currentView = 'summary';
         updateUI();
@@ -586,30 +584,15 @@ document.getElementById('expense-form').addEventListener('submit', async (event)
         currentDetailPeriod = null;
         updateUI();
     }
-    // ★ 詳細表示関数 (引数は支払い日情報を含む期間オブジェクト)
-    function showMonthDetailView(period) { // period は {start, end, paymentDueDateDisplay}
+    function showMonthDetailView(period) {
         currentView = 'detail';
         currentDetailPeriod = period;
         updateUI();
     }
 
-      async function deleteExpense(id) {
-        console.log("Firestoreからデータを削除します (ドキュメントID):", id);
-
-        const expenseDocRef = doc(db, "expenses", id);
-
-        try {
-            await deleteDoc(expenseDocRef);
-            console.log("ドキュメント (ID: " + id + ") の削除に成功しました。");
-        } catch (e) {
-            console.error("データの削除中にエラーが発生しました: ", e);
-            alert("データの削除に失敗しました。もう一度試してください。");
-        }
-    }
-  
     // --- UI更新の統合 ---
-    // (updateUI は変更なし)
     function updateUI() {
+        console.log(`Updating UI for view: ${currentView}`);
         switch (currentView) {
             case 'summary':
                 updateSummaryView();
@@ -619,13 +602,18 @@ document.getElementById('expense-form').addEventListener('submit', async (event)
                 break;
             case 'detail':
                 if (currentDetailPeriod) {
-                    const hasData = expenses.some(exp => exp.date >= currentDetailPeriod.start && exp.date <= currentDetailPeriod.end);
-                    if(hasData) {
+                    // 詳細表示する期間のデータが存在するか再チェック
+                    const hasDataForPeriod = expenses.some(exp =>
+                        exp.date >= currentDetailPeriod.start && exp.date <= currentDetailPeriod.end
+                    );
+                    if (hasDataForPeriod) {
                         updateMonthDetailView(currentDetailPeriod);
                     } else {
-                         showHistoryView();
+                        console.warn("詳細表示期間のデータがなくなりました。履歴表示に戻ります。");
+                        showHistoryView(); // データがなければ履歴表示
                     }
                 } else {
+                    console.warn("詳細表示期間が指定されていません。履歴表示に戻ります。");
                     showHistoryView();
                 }
                 break;
@@ -634,20 +622,15 @@ document.getElementById('expense-form').addEventListener('submit', async (event)
         }
     }
 
-    // --- 初期化 ---
-document.addEventListener('DOMContentLoaded', () => {
-    console.log("DOM読み込み完了");
+    // --- 初期化処理 ---
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log("DOM読み込み完了");
+        subscribeToExpenses(); // Firestoreデータの監視を開始
+        const today = new Date();
+        document.getElementById('date').valueAsDate = today; // 日付の初期設定
+        console.log("家計管理アプリが初期化されました。");
+    });
 
-    // Firestoreデータの監視を開始
-    subscribeToExpenses();
-
-    // 日付入力欄に今日の日付を設定
-    const today = new Date();
-    document.getElementById('date').valueAsDate = today;
-
-    console.log("家計管理アプリが初期化されました。");
-});
-
-  </script>
+</script>
 </body>
 </html>
