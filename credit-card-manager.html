@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>家計管理アプリ</title>
+  <style>
+    /* CSSは変更なし */
+    body {
+      font-family: 'Helvetica', sans-serif;
+      padding: 20px;
+      background: #f2f2f2;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    input, select, button {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    input[type="date"], select {
+        min-width: 120px;
+    }
+     input[type="number"], input[type="text"] {
+        flex-grow: 1;
+        min-width: 100px;
+    }
+    button[type="submit"] {
+      background: #4CAF50;
+      color: white;
+      cursor: pointer;
+      border: none;
+       min-width: 80px;
+    }
+    button[type="submit"]:hover {
+      background: #45a049;
+    }
+    .action-button {
+      background: #2196F3;
+      color: white;
+      cursor: pointer;
+      border: none;
+       padding: 10px 15px;
+       border-radius: 6px;
+       font-size: 16px;
+       margin: 5px;
+    }
+    .action-button:hover {
+      background: #1e88e5;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-top: 15px;
+    }
+    th, td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background: #333;
+      color: white;
+       text-align: center;
+    }
+    /* ★ 履歴テーブルの「支払い予定日」列 */
+    #history th:first-child, #history td:first-child {
+        /* width: 60%; */ /* 必要なら調整 */
+        text-align: center;
+    }
+     /* ★ 履歴テーブルの金額列 */
+    #history th:last-child, #history td:last-child {
+        /* width: 40%; */ /* 必要なら調整 */
+        text-align: right;
+    }
+    #month-detail td:nth-child(3), #month-detail th:nth-child(3) {
+        text-align: right;
+    }
+     #month-detail td:last-child, #month-detail th:last-child {
+        text-align: center;
+     }
+    .button-group {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .month-summary {
+      font-size: 18px;
+      margin-top: 20px;
+      padding: 15px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .summary-period { /* 名前はperiodだが支払い日を表示 */
+        font-size: 16px; /* 少し大きく */
+        font-weight: bold; /* 少し太く */
+        color: #333;
+        margin-bottom: 8px;
+    }
+    .per-person-info {
+        margin-top: 10px;
+        font-size: 17px;
+        color: #555;
+    }
+    .month-detail, #history {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 15px;
+    }
+    .detail-actions {
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    td button {
+        background: #f44336;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    td button:hover {
+        background: #e53935;
+    }
+    #history-body tr {
+        cursor: pointer;
+    }
+    #history-body tr:hover {
+        background-color: #f5f5f5;
+    }
+    @media (max-width: 768px) {
+        form {
+            flex-direction: column;
+        }
+        input, select, button[type="submit"] {
+            width: 100%;
+        }
+        th, td {
+            padding: 10px 8px;
+        }
+        #history th:first-child, #history td:first-child { width: auto; text-align: center;}
+        #history th:last-child, #history td:last-child { width: auto; text-align: right;}
+    }
+    @media (max-width: 480px) {
+        body {
+            padding: 10px;
+        }
+        h1 {
+            font-size: 24px;
+        }
+        th, td {
+            font-size: 14px;
+        }
+        .button-group button, .detail-actions button {
+            display: block;
+            width: 100%;
+            margin: 8px 0;
+        }
+        .month-summary {
+            font-size: 16px;
+        }
+        .summary-period {
+            font-size: 15px;
+        }
+        .per-person-info {
+            font-size: 15px;
+        }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>家計管理アプリ</h1>
+
+  <form id="expense-form">
+    <input type="date" id="date" required>
+    <select id="user" required>
+      <option value="まい">まい</option>
+      <option value="まき">まき</option>
+    </select>
+    <input type="number" id="amount" placeholder="金額" required min="0">
+    <input type="text" id="store" placeholder="店舗" required>
+    <input type="text" id="description" placeholder="内容" required>
+    <button type="submit">追加</button>
+  </form>
+
+  <div class="button-group">
+    <button class="action-button" onclick="showSummaryView()">今月の合計</button>
+    <button class="action-button" onclick="showHistoryView()">全履歴</button>
+  </div>
+
+  <div id="summary" class="month-summary" style="display:none;">
+    <!-- ★ 表示テキスト変更 -->
+    <p class="summary-period"><span id="summary-period-text"></span> 支払い分</p>
+    <p>合計: ¥<span id="monthly-total">0</span></p>
+    <p class="per-person-info">一人当たり: ¥<span id="per-person-total">0</span></p>
+  </div>
+
+  <div id="history" style="display:none;">
+    <!-- ★ タイトル、ヘッダー変更 -->
+    <h2>全履歴 (支払い予定日別 合計)</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>支払い予定日</th>
+          <th>合計金額</th>
+        </tr>
+      </thead>
+      <tbody id="history-body">
+      </tbody>
+    </table>
+  </div>
+
+  <div id="month-detail" class="month-detail">
+     <div class="detail-actions">
+        <button class="action-button" onclick="showHistoryView()">← 全履歴に戻る</button>
+     </div>
+     <!-- ★ タイトルはJSで設定 -->
+    <h2 id="detail-title">詳細</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>日付</th>
+          <th>利用者</th>
+          <th>金額</th>
+          <th>店舗</th>
+          <th>内容</th>
+          <th>削除</th>
+        </tr>
+      </thead>
+      <tbody id="detail-body">
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    let expenses = [];
+    let currentView = 'summary';
+    let currentDetailPeriod = null; // {start, end, paymentDueDateDisplay}
+
+    // --- ヘルパー関数 ---
+    function formatDate(date, separator = '-') {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}${separator}${m}${separator}${d}`;
+    }
+
+    // ★ 期間計算と支払い日表示文字列を生成する関数
+    function getBillingPeriodForDate(dateString) {
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        const month = date.getMonth(); // 0-11
+        const day = date.getDate();
+
+        let startDate, endDate;
+
+        if (day >= 16) {
+            // 今月16日～来月15日の期間
+            startDate = new Date(year, month, 16);
+            endDate = new Date(year, month + 1, 15);
+        } else {
+            // 前月16日～今月15日の期間
+            startDate = new Date(year, month - 1, 16);
+            endDate = new Date(year, month, 15);
+        }
+
+        // ★ 支払い日 (endDateの翌月10日) を計算
+        const paymentDueDate = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 10);
+        const paymentDueDateDisplay = formatDate(paymentDueDate, '/'); // YYYY/MM/10 形式
+
+        return {
+            start: formatDate(startDate), // YYYY-MM-DD
+            end: formatDate(endDate),     // YYYY-MM-DD
+            // ★ 表示用の支払い日文字列を追加（または display をこれに置き換える）
+            paymentDueDateDisplay: paymentDueDateDisplay, // YYYY/MM/DD 形式
+            // 参考: 元の期間表示
+            // originalDisplay: `${formatDate(startDate, '/')} - ${formatDate(endDate, '/')}`
+        };
+    }
+
+    function getCurrentBillingPeriod() {
+        const today = new Date();
+        return getBillingPeriodForDate(formatDate(today));
+    }
+
+
+    // --- データ永続化 ---
+    function loadData() {
+        const savedExpenses = localStorage.getItem('expenses');
+        if (savedExpenses) {
+            expenses = JSON.parse(savedExpenses);
+        }
+    }
+
+    function saveData() {
+        localStorage.setItem('expenses', JSON.stringify(expenses));
+    }
+
+    // --- UI 更新関数 ---
+
+    // 「今月の合計」を更新して表示
+    function updateSummaryView() {
+      const billingPeriod = getCurrentBillingPeriod();
+      const startDate = billingPeriod.start;
+      const endDate = billingPeriod.end;
+
+      const currentPeriodTotal = expenses
+        .filter(exp => exp.date >= startDate && exp.date <= endDate)
+        .reduce((sum, exp) => sum + exp.amount, 0);
+
+      const perPersonTotal = Math.ceil(currentPeriodTotal / 2);
+
+      // ★ 支払い予定日を表示
+      document.getElementById('summary-period-text').textContent = billingPeriod.paymentDueDateDisplay;
+      document.getElementById('monthly-total').textContent = currentPeriodTotal.toLocaleString();
+      document.getElementById('per-person-total').textContent = perPersonTotal.toLocaleString();
+
+      document.getElementById('summary').style.display = 'block';
+      document.getElementById('history').style.display = 'none';
+      document.getElementById('month-detail').style.display = 'none';
+      currentView = 'summary';
+    }
+
+    // 全履歴（支払い予定日別合計）を更新して表示
+    function updateHistoryView() {
+      const tbody = document.getElementById('history-body');
+      tbody.innerHTML = '';
+
+      const periodTotals = {}; // { 'YYYY-MM-DD(start)': { total: 0, start: '...', end: '...', paymentDueDateDisplay: '...' } }
+      expenses.forEach(exp => {
+          const period = getBillingPeriodForDate(exp.date);
+          const periodKey = period.start; // 開始日をキーに
+
+          if (!periodTotals[periodKey]) {
+              periodTotals[periodKey] = {
+                  total: 0,
+                  start: period.start,
+                  end: period.end,
+                  paymentDueDateDisplay: period.paymentDueDateDisplay // 支払い日表示を追加
+              };
+          }
+          periodTotals[periodKey].total += exp.amount;
+      });
+
+      const sortedPeriodKeys = Object.keys(periodTotals).sort().reverse();
+
+      if (sortedPeriodKeys.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="2" style="text-align: center;">履歴はありません。</td></tr>';
+      } else {
+          sortedPeriodKeys.forEach(periodKey => {
+              const periodData = periodTotals[periodKey];
+              if (periodData.total <= 0) return;
+
+              const row = document.createElement('tr');
+              row.style.cursor = 'pointer';
+              // ★ title属性も支払い日ベースに
+              row.title = `${periodData.paymentDueDateDisplay} 支払い分の詳細を見る`;
+
+              const cellPeriod = document.createElement('td');
+              // ★ 支払い予定日を表示
+              cellPeriod.textContent = periodData.paymentDueDateDisplay;
+              const cellTotal = document.createElement('td');
+              cellTotal.textContent = `¥${periodData.total.toLocaleString()}`;
+
+              row.appendChild(cellPeriod);
+              row.appendChild(cellTotal);
+              row.addEventListener('click', () => {
+                  // ★ 詳細表示にも支払い日情報を含む期間データを渡す
+                  showMonthDetailView({
+                      start: periodData.start,
+                      end: periodData.end,
+                      paymentDueDateDisplay: periodData.paymentDueDateDisplay
+                  });
+              });
+
+              tbody.appendChild(row);
+          });
+      }
+
+      document.getElementById('summary').style.display = 'none';
+      document.getElementById('history').style.display = 'block';
+      document.getElementById('month-detail').style.display = 'none';
+      currentView = 'history';
+    }
+
+    // 特定の期間の詳細を更新して表示
+    function updateMonthDetailView(period) { // period は {start, end, paymentDueDateDisplay}
+      currentDetailPeriod = period;
+      const detailDiv = document.getElementById('month-detail');
+      const tbody = document.getElementById('detail-body');
+      tbody.innerHTML = '';
+      // ★ タイトルを支払い日表示に更新
+      document.getElementById('detail-title').textContent = `${period.paymentDueDateDisplay} 支払い分の詳細`;
+
+      const filteredExpenses = expenses
+          .filter(exp => exp.date >= period.start && exp.date <= period.end)
+          .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      if (filteredExpenses.length === 0) {
+          // このメッセージは期間内にデータがない場合なのでそのままでOK
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">この期間の支出はありません。</td></tr>';
+      } else {
+          filteredExpenses.forEach(exp => {
+              // (行生成のロジックは変更なし)
+              const row = document.createElement('tr');
+              row.dataset.expenseId = exp.id;
+              // ...(td要素の追加は省略)...
+              const cellDate = document.createElement('td');
+              cellDate.textContent = exp.date;
+              const cellUser = document.createElement('td');
+              cellUser.textContent = exp.user;
+              const cellAmount = document.createElement('td');
+              cellAmount.textContent = `¥${exp.amount.toLocaleString()}`;
+              const cellStore = document.createElement('td');
+              cellStore.textContent = exp.store;
+              const cellDescription = document.createElement('td');
+              cellDescription.textContent = exp.description;
+              const cellDelete = document.createElement('td');
+              const deleteButton = document.createElement('button');
+              deleteButton.textContent = '削除';
+              deleteButton.onclick = (event) => {
+                  event.stopPropagation();
+                  if (confirm(`【確認】\n日付: ${exp.date}\n金額: ¥${exp.amount}\n内容: ${exp.description}\n\nこの支出を削除しますか？`)) {
+                      deleteExpense(exp.id);
+                  }
+              };
+              cellDelete.appendChild(deleteButton);
+
+              row.appendChild(cellDate);
+              row.appendChild(cellUser);
+              row.appendChild(cellAmount);
+              row.appendChild(cellStore);
+              row.appendChild(cellDescription);
+              row.appendChild(cellDelete);
+
+              tbody.appendChild(row);
+          });
+      }
+
+      document.getElementById('summary').style.display = 'none';
+      document.getElementById('history').style.display = 'none';
+      document.getElementById('month-detail').style.display = 'block';
+      currentView = 'detail';
+    }
+
+
+    // --- イベントハンドラ ---
+    // (expense-form submit, deleteExpense は変更なし)
+    document.getElementById('expense-form').addEventListener('submit', function(event) {
+      event.preventDefault();
+      const date = document.getElementById('date').value;
+      const user = document.getElementById('user').value;
+      const amount = parseInt(document.getElementById('amount').value, 10);
+      const store = document.getElementById('store').value;
+      const description = document.getElementById('description').value;
+
+      if (!date || isNaN(amount) || amount <= 0 || !store || !description) {
+          alert('すべての項目を正しく入力してください。金額は0より大きい値を入力してください。');
+          return;
+      }
+      const expense = { id: Date.now() + Math.random(), date, user, amount, store, description };
+      expenses.push(expense);
+      saveData();
+      updateUI();
+      document.getElementById('expense-form').reset();
+    });
+
+    function deleteExpense(id) {
+      const indexToDelete = expenses.findIndex(exp => exp.id === id);
+      if (indexToDelete === -1) return;
+      expenses.splice(indexToDelete, 1);
+      if (currentView === 'detail' && currentDetailPeriod) {
+          const remainingExpenses = expenses.filter(exp =>
+              exp.date >= currentDetailPeriod.start && exp.date <= currentDetailPeriod.end
+          );
+          if (remainingExpenses.length === 0) {
+              currentView = 'history';
+              currentDetailPeriod = null;
+          }
+      }
+      saveData();
+      updateUI();
+    }
+
+    // --- 表示切り替え関数 ---
+    // (showSummaryView, showHistoryView は変更なし)
+    function showSummaryView() {
+        currentView = 'summary';
+        updateUI();
+    }
+    function showHistoryView() {
+        currentView = 'history';
+        currentDetailPeriod = null;
+        updateUI();
+    }
+    // ★ 詳細表示関数 (引数は支払い日情報を含む期間オブジェクト)
+    function showMonthDetailView(period) { // period は {start, end, paymentDueDateDisplay}
+        currentView = 'detail';
+        currentDetailPeriod = period;
+        updateUI();
+    }
+
+    // --- UI更新の統合 ---
+    // (updateUI は変更なし)
+    function updateUI() {
+        switch (currentView) {
+            case 'summary':
+                updateSummaryView();
+                break;
+            case 'history':
+                updateHistoryView();
+                break;
+            case 'detail':
+                if (currentDetailPeriod) {
+                    const hasData = expenses.some(exp => exp.date >= currentDetailPeriod.start && exp.date <= currentDetailPeriod.end);
+                    if(hasData) {
+                        updateMonthDetailView(currentDetailPeriod);
+                    } else {
+                         showHistoryView();
+                    }
+                } else {
+                    showHistoryView();
+                }
+                break;
+            default:
+                updateSummaryView();
+        }
+    }
+
+    // --- 初期化 ---
+    // (DOMContentLoaded は変更なし)
+    document.addEventListener('DOMContentLoaded', () => {
+        loadData();
+        const today = new Date();
+        document.getElementById('date').valueAsDate = today;
+        updateUI();
+    });
+
+  </script>
+</body>
+</html>
